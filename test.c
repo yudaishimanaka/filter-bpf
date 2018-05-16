@@ -73,16 +73,13 @@ static int dev_get_ifindex(const char *ifname)
 
 int main(void)
 {
-	int ret, ifindex, fd;
-	bool invert = false, raw = false;
+	bool raw = false;
 	const char *ifname = "wlp3s0";
 	const char *filter = NULL;
 	struct sock_fprog cbpf;
-	struct bpf_insn *ebpf;
-	size_t ebpf_len = 0;
 
 	filter = "tcp and port 80";
-	ifindex = dev_get_ifindex(ifname);
+	dev_get_ifindex(ifname);
 
 	printf("PCAP filter string: %s\n", filter);
 
@@ -91,30 +88,6 @@ int main(void)
 
 	printf("cBPF program (%u insns):\n", cbpf.len);
 	cbpf_dump_all(&cbpf, raw);
-
-	/* 1st pass: calculate the eBPF program length */
-	ret = bpf_convert_filter(cbpf.filter, cbpf.len, NULL, &ebpf_len, invert);
-	if (ret < 0)
-		panic("Cannot get eBPF length\n");
-
-	ebpf = xmalloc(ebpf_len * sizeof(*ebpf));
-
-	/* 2nd pass: remap cBPF insns into eBPF insns */
-	ret = bpf_convert_filter(cbpf.filter, cbpf.len, ebpf, &ebpf_len, invert);
-	if (ret < 0)
-		panic("Cannot convert cBPF to eBPF\n");
-
-	printf("eBPF program (%zu insns):\n", ebpf_len);
-	ebpf_dump_all(ebpf, ebpf_len, raw);
-
-
-	fd = bpf_load_and_attach_xdp(ebpf, ebpf_len);
-	if (fd < 0)
-		panic("Cannot load and attach eBPF program\n");
-
-	ret = set_link_xdp_fd(ifindex, fd);
-	if (ret < 0)
-		panic("Cannot set XDP eBPF program on interface %s\n", ifname);
 
 	while (true) {
 		sleep(1);
