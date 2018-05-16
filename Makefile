@@ -1,5 +1,5 @@
 PROG = test
-OBJS = bpf_convert.o bpf_load.o cbpf.o ebpf.o filter_comp.o utils.o filter2xdp.o
+OBJS = bpf_convert.o bpf_load.o cbpf.o ebpf.o filter_comp.o utils.o test.o
 
 LIBS = -lpcap
 INCS = -Iinclude
